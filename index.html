@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AURA-GRID AI | Real-Time Insulator Fault Detection & Alert System</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="p-3 md:p-6 antialiased">
+  <div class="max-w-7xl mx-auto space-y-6">
+
+    <!-- TOP HEADER -->
+    <header class="glass-panel rounded-2xl p-4 md:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-slate-800">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-cyan-600 to-emerald-500 flex items-center justify-center shadow-lg shadow-cyan-500/20 text-white font-extrabold text-xl">
+          <i data-lucide="zap" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl md:text-2xl font-extrabold tracking-tight text-white">AURA-GRID <span class="text-cyan-400">TinyML</span></h1>
+            <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-cyan-950/80 text-cyan-400 border border-cyan-800/60 font-mono">v2.1 EDGE</span>
+          </div>
+          <p class="text-xs text-slate-400">High-Voltage Insulator Real-Time Fault Classification & Alert System (1,750 Research Samples)</p>
+        </div>
+      </div>
+
+      <!-- Controls & Status Badges -->
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto justify-end">
+        <!-- Audio Alarm Toggle -->
+        <button id="toggleAudioBtn" class="px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-slate-300 transition-all shadow-sm">
+          <i id="audioIcon" data-lucide="volume-2" class="w-4 h-4 text-emerald-400"></i>
+          <span id="audioText">Siren: Enabled</span>
+        </button>
+
+        <!-- Test Siren Audio -->
+        <button id="testAudioBtn" class="px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 bg-rose-950/40 hover:bg-rose-900/40 border border-rose-800/60 text-rose-300 transition-all">
+          <i data-lucide="bell-ring" class="w-3.5 h-3.5"></i>
+          <span>Test Alarm</span>
+        </button>
+
+        <!-- Model Specs Modal Trigger -->
+        <button id="openModelModalBtn" class="px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-slate-300 transition-all">
+          <i data-lucide="cpu" class="w-3.5 h-3.5 text-cyan-400"></i>
+          <span>Model Specs</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- CRITICAL REAL-TIME ALERT BANNER -->
+    <section id="alertBanner" class="rounded-2xl p-4 md:p-5 border transition-all duration-300 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-emerald-950/30 border-emerald-500/40 text-emerald-200">
+      <div class="flex items-center gap-4">
+        <div id="alarmBeacon" class="w-12 h-12 rounded-xl flex items-center justify-center bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex-shrink-0">
+          <i id="alarmIcon" data-lucide="shield-check" class="w-7 h-7"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <span id="alertSeverityBadge" class="px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider rounded-md bg-emerald-500/20 text-emerald-300 font-mono">NORMAL OPERATION</span>
+            <span id="alertTimestamp" class="text-xs text-slate-400 font-mono">00:00:00</span>
+          </div>
+          <h2 id="alertHeadline" class="text-lg md:text-xl font-bold text-white mt-0.5">All Parameters Nominal - System Healthy</h2>
+          <p id="alertSubtext" class="text-xs text-slate-300 mt-0.5">Leakage current, partial discharges, and harmonics are within baseline IEEE specifications.</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 border-slate-800/60 pt-3 md:pt-0">
+        <div class="text-right">
+          <span class="text-xs text-slate-400 uppercase font-mono block">Fault Probability</span>
+          <span id="primaryConfidenceText" class="text-2xl font-black font-mono text-white">99.6%</span>
+        </div>
+        <div id="safetyTripIndicator" class="px-3 py-1.5 rounded-lg border text-xs font-mono font-semibold flex items-center gap-1.5 bg-slate-900/60 border-slate-700 text-slate-300">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span>Interlock: ARMED</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- MAIN TWO-COLUMN DASHBOARD -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- LEFT COLUMN: SENSOR TELEMETRY & CONTROLS (7 Cols) -->
+      <div class="lg:col-span-7 space-y-6">
+
+        <!-- REAL-TIME TELEMETRY SENSOR GRID -->
+        <div class="glass-panel rounded-2xl p-5">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+              <i data-lucide="activity" class="w-5 h-5 text-cyan-400"></i>
+              <h2 class="text-base font-bold text-white uppercase tracking-wider text-sm">Live Sensor Telemetry</h2>
+            </div>
+            <span class="text-xs font-mono text-slate-400 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+              ADC Stream
+            </span>
+          </div>
+
+          <!-- 8 Sensor Cards Grid -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            
+            <!-- Voltage -->
+            <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
+              <div class="flex items-center justify-between text-slate-400 text-xs">
+                <span>Voltage</span>
+                <span class="font-mono text-[10px] text-cyan-400">kV</span>
+              </div>
+              <div class="my-1.5">
+                <span id="val_Voltage_kV" class="text-xl font-bold font-mono text-white">11.05</span>
+              </div>
+              <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                <div id="bar_Voltage_kV" class="bg-cyan-500 h-full w-3/4"></div>
+              </div>
+            </div>
+
+            <!-- Leakage Current (Critical) -->
+            <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-3 flex flex-col justify-between" id="card_Leakage">
+              <div class="flex items-center justify-between text-slate-400 text-xs">
+                <span>Leakage I</span>
+                <span class="font-mono text-[10px] text-amber-400">mA</span>
+              </div>
+              <div class="my-1.5">
+                <span id="val_Leakage_Current_mA" class="text-xl font-bold font-mono text-amber-400">0.15</span>
+              </div>
+              <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                <div id="bar_Leakage_Current_mA" class="bg-amber-500 h-full w-1/12"></div>
+              </div>
+            </div>
+
+            <!-- Temperature -->
+            <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
+              <div class="flex items-center justify-between text-slate-400 text-xs">
+                <span>Ambient Temp</span>
+                <span class="font-mono text-[10px] text-cyan-400">°C</span>
+              </div>
+              <div class="my-1.5">
+                <span id="val_Temperature_C" class="text-xl font-bold font-mono text-white">35.2</span>
+              </div>
+              <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                <div id="bar_Temperature_C" class="bg-cyan-500 h-full w-2/5"></div>
+              </div>
+            </div>
+
+            <!-- Humidity -->
+            <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
+              <div class="flex items-center justify-between text-slate-400 text-xs">
+                <span>Rel Humidity</span>
+                <span class="font-mono text-[10px] text-cyan-400">%</span>
+              </div>
+              <div class="my-1.5">
+                <span id="val_Relative_Humidity_pct" class="text-xl font-bold font-mono text-white">65.0</span>
+              </div>
+              <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                <div id="bar_Relative_Humidity_pct" class="bg-cyan-500 h-full w-3/5"></div>
+              </div>
+            </div>
+
+            <!-- Pollution Index -->
+            <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-3 flex flex-col justify-between" id="card_Pollution">
+              <div class="flex items-center justify-between text-slate-400 text-xs">
+                <span>Pollution Idx</span>
+                <span class="font-mono text-[10px] text-yellow-400">0-1.0</span>
+              </div>
+              <div class="my-1.5">
+                <span id="val_Pollution_Index" class="text-xl font-bold font-mono text-white">0.08</span>
+              </div>
+              <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                <div id="bar_Pollution_Index" class="bg-yellow-500 h-full w-1/12"></div>
+              </div>
+            </div>
+
+            <!-- THD -->
+            <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
+              <div class="flex items-center justify-between text-slate-400 text-xs">
+                <span>Harmonics THD</span>
+                <span class="font-mono text-[10px] text-cyan-400">%</span>
+              </div>
+              <div class="my-1.5">
+                <span id="val_Leakage_Current_THD_pct" class="text-xl font-bold font-mono text-white">0.35</span>
+              </div>
+              <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                <div id="bar_Leakage_Current_THD_pct" class="bg-cyan-500 h-full w-1/6"></div>
+              </div>
+            </div>
+
+            <!-- Phase Angle -->
+            <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
+              <div class="flex items-center justify-between text-slate-400 text-xs">
+                <span>Phase Angle</span>
+                <span class="font-mono text-[10px] text-cyan-400">deg</span>
+              </div>
+              <div class="my-1.5">
+                <span id="val_Phase_Angle_deg" class="text-xl font-bold font-mono text-white">-2.4</span>
+              </div>
+              <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                <div id="bar_Phase_Angle_deg" class="bg-cyan-500 h-full w-1/2"></div>
+              </div>
+            </div>
+
+            <!-- Partial Discharge (Critical) -->
+            <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-3 flex flex-col justify-between" id="card_PD">
+              <div class="flex items-center justify-between text-slate-400 text-xs">
+                <span>PD Events</span>
+                <span class="font-mono text-[10px] text-rose-400">count</span>
+              </div>
+              <div class="my-1.5">
+                <span id="val_Partial_Discharge_Count" class="text-xl font-bold font-mono text-emerald-400">1</span>
+              </div>
+              <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                <div id="bar_Partial_Discharge_Count" class="bg-emerald-500 h-full w-1/12"></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- SIMULATION STREAMER & RESEARCH PRESETS -->
+        <div class="glass-panel rounded-2xl p-5 space-y-4">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div>
+              <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <i data-lucide="radio" class="w-4 h-4 text-emerald-400"></i>
+                Real-Time Telemetry Streamer
+              </h3>
+              <p class="text-xs text-slate-400">Simulates active ESP32 IoT telemetry stream using research dataset samples.</p>
+            </div>
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+              <button id="streamToggleBtn" class="flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white flex items-center justify-center gap-2 shadow-lg shadow-cyan-600/20 transition-all">
+                <i id="streamIcon" data-lucide="play" class="w-4 h-4"></i>
+                <span id="streamBtnText">Start Stream</span>
+              </button>
+              <button id="streamNextBtn" class="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center gap-1.5 transition-all">
+                <i data-lucide="skip-forward" class="w-4 h-4"></i>
+                <span>Next</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Dataset Presets Buttons -->
+          <div>
+            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2 font-mono">Load Real Research Presets:</span>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+              <button onclick="loadPreset(0)" class="p-2 rounded-lg bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-800/60 text-emerald-300 font-medium text-left truncate transition-all">
+                🟢 1. Healthy Normal
+              </button>
+              <button onclick="loadPreset(1)" class="p-2 rounded-lg bg-yellow-950/40 hover:bg-yellow-900/50 border border-yellow-800/60 text-yellow-300 font-medium text-left truncate transition-all">
+                🟡 2. Light Pollution
+              </button>
+              <button onclick="loadPreset(2)" class="p-2 rounded-lg bg-orange-950/40 hover:bg-orange-900/50 border border-orange-800/60 text-orange-300 font-medium text-left truncate transition-all">
+                🟠 3. Moderate Fault
+              </button>
+              <button onclick="loadPreset(3)" class="p-2 rounded-lg bg-rose-950/40 hover:bg-rose-900/50 border border-rose-800/60 text-rose-300 font-medium text-left truncate transition-all">
+                🔴 4. Heavy Pollution
+              </button>
+              <button onclick="loadPreset(4)" class="p-2 rounded-lg bg-sky-950/40 hover:bg-sky-900/50 border border-sky-800/60 text-sky-300 font-medium text-left truncate transition-all">
+                💧 5. Wet Contamination
+              </button>
+              <button onclick="loadPreset(5)" class="p-2 rounded-lg bg-purple-950/40 hover:bg-purple-900/50 border border-purple-800/60 text-purple-300 font-medium text-left truncate transition-all">
+                ⚡ 6. Surface Cracking
+              </button>
+              <button onclick="loadPreset(6)" class="p-2 rounded-lg bg-red-950/60 hover:bg-red-900/70 border border-red-600 text-red-200 font-bold text-left truncate transition-all">
+                🚨 7. Flashover Risk
+              </button>
+              <button onclick="loadPreset('trip')" class="p-2 rounded-lg bg-pink-950/50 hover:bg-pink-900/60 border border-pink-700 text-pink-300 font-bold text-left truncate transition-all">
+                💥 8. Safety Trip (Overload)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- MANUAL DIAGNOSTIC TUNER (SLIDERS) -->
+        <div class="glass-panel rounded-2xl p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <i data-lucide="sliders" class="w-4 h-4 text-cyan-400"></i>
+              Manual Sensor Calibration
+            </h3>
+            <button onclick="resetToBaseline()" class="text-xs text-cyan-400 hover:text-cyan-300 underline font-mono">Reset Baseline</button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            
+            <!-- Leakage Current Slider (Primary) -->
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-300 font-medium">Leakage Current (mA)</span>
+                <span id="sliderVal_Leakage" class="font-mono text-cyan-400 font-bold">0.15 mA</span>
+              </div>
+              <input type="range" id="slider_Leakage" min="0.01" max="35.0" step="0.1" value="0.15" class="w-full">
+              <span class="text-[10px] text-slate-500 block mt-0.5">Safe: < 2.0 mA | Warning: > 8 mA | Trip: > 25 mA</span>
+            </div>
+
+            <!-- Partial Discharge Slider (Primary) -->
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-300 font-medium">Partial Discharge Count</span>
+                <span id="sliderVal_PD" class="font-mono text-cyan-400 font-bold">1 events</span>
+              </div>
+              <input type="range" id="slider_PD" min="0" max="220" step="1" value="1" class="w-full">
+              <span class="text-[10px] text-slate-500 block mt-0.5">Healthy: 0-5 | Mod: 10-30 | Severe: > 50</span>
+            </div>
+
+            <!-- Pollution Index Slider -->
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-300 font-medium">Pollution Index (ESDD)</span>
+                <span id="sliderVal_Pollution" class="font-mono text-cyan-400 font-bold">0.08</span>
+              </div>
+              <input type="range" id="slider_Pollution" min="0.0" max="1.0" step="0.01" value="0.08" class="w-full">
+            </div>
+
+            <!-- Harmonics THD Slider -->
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-300 font-medium">Harmonic THD (%)</span>
+                <span id="sliderVal_THD" class="font-mono text-cyan-400 font-bold">0.35 %</span>
+              </div>
+              <input type="range" id="slider_THD" min="0.05" max="50.0" step="0.2" value="0.35" class="w-full">
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT COLUMN: AI CLASSIFIER & ALERT LOGIC (5 Cols) -->
+      <div class="lg:col-span-5 space-y-6">
+
+        <!-- AI PREDICTION CARD -->
+        <div class="glass-panel rounded-2xl p-5 space-y-5">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div class="flex items-center gap-2">
+              <i data-lucide="brain-circuit" class="w-5 h-5 text-cyan-400"></i>
+              <h2 class="text-sm font-bold text-white uppercase tracking-wider">AI TinyML Inference Engine</h2>
+            </div>
+            <span class="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">Dense(16)→(8)</span>
+          </div>
+
+          <!-- Result Card Box -->
+          <div id="aiResultCard" class="rounded-xl p-4 border bg-slate-900/80 border-slate-700/60 flex items-center justify-between">
+            <div>
+              <span class="text-[10px] font-mono uppercase tracking-widest text-slate-400 block">Classified State</span>
+              <h3 id="predictedClassName" class="text-xl font-black text-white mt-0.5">HEALTHY</h3>
+              <p id="predictedClassLabel" class="text-xs text-slate-300 mt-0.5">Normal Grid Operation</p>
+            </div>
+            <div class="text-right">
+              <span class="text-[10px] font-mono uppercase text-slate-400 block">Severity</span>
+              <span id="predictedSeverityBadge" class="inline-block px-2.5 py-1 text-xs font-extrabold rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                NORMAL
+              </span>
+            </div>
+          </div>
+
+          <!-- Class Probabilities Breakdown -->
+          <div class="space-y-3">
+            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block font-mono">Softmax Probability Distribution:</span>
+
+            <!-- Class 0: Healthy -->
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-300 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Class 0: Healthy
+                </span>
+                <span id="prob_0_text" class="font-mono text-white font-bold">99.6%</span>
+              </div>
+              <div class="w-full bg-slate-800/80 h-2 rounded-full overflow-hidden">
+                <div id="prob_0_bar" class="bg-emerald-500 h-full w-full transition-all duration-300"></div>
+              </div>
+            </div>
+
+            <!-- Class 1: Light Fault -->
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-300 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-yellow-400"></span> Class 1: Light Fault
+                </span>
+                <span id="prob_1_text" class="font-mono text-white font-bold">0.4%</span>
+              </div>
+              <div class="w-full bg-slate-800/80 h-2 rounded-full overflow-hidden">
+                <div id="prob_1_bar" class="bg-yellow-500 h-full w-0 transition-all duration-300"></div>
+              </div>
+            </div>
+
+            <!-- Class 2: Moderate Fault -->
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-300 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-orange-400"></span> Class 2: Moderate Fault
+                </span>
+                <span id="prob_2_text" class="font-mono text-white font-bold">0.0%</span>
+              </div>
+              <div class="w-full bg-slate-800/80 h-2 rounded-full overflow-hidden">
+                <div id="prob_2_bar" class="bg-orange-500 h-full w-0 transition-all duration-300"></div>
+              </div>
+            </div>
+
+            <!-- Class 3: Heavy / Severe Fault -->
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-300 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-rose-500"></span> Class 3: Heavy / Flashover Risk
+                </span>
+                <span id="prob_3_text" class="font-mono text-white font-bold">0.0%</span>
+              </div>
+              <div class="w-full bg-slate-800/80 h-2 rounded-full overflow-hidden">
+                <div id="prob_3_bar" class="bg-rose-500 h-full w-0 transition-all duration-300"></div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Microcontroller Hardware Resource Card -->
+          <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-3 text-xs space-y-2">
+            <div class="flex items-center justify-between text-slate-400 font-mono">
+              <span>Target Microcontroller:</span>
+              <span class="text-cyan-400 font-bold">ESP32 / ESP32-S3</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2 text-center pt-1 border-t border-slate-800">
+              <div>
+                <span class="text-[10px] text-slate-500 block">Flash ROM</span>
+                <span class="font-mono font-bold text-white">3.6 KB</span>
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-500 block">Tensor Arena</span>
+                <span class="font-mono font-bold text-white">4.0 KB</span>
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-500 block">Inference Time</span>
+                <span class="font-mono font-bold text-emerald-400">&lt; 0.1 ms</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- INCIDENT AUDIT TRAIL & ALERT LOG -->
+    <section class="glass-panel rounded-2xl p-5 space-y-4">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+          <i data-lucide="history" class="w-5 h-5 text-cyan-400"></i>
+          <div>
+            <h2 class="text-base font-bold text-white uppercase tracking-wider text-sm">Telemetry Alert Log & Incident Audit Trail</h2>
+            <p class="text-xs text-slate-400">Real-time log of events classified by the TinyML engine.</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button id="exportCsvBtn" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center gap-1.5 transition-all">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            <span>Export CSV</span>
+          </button>
+          <button id="clearLogBtn" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-all">
+            Clear Log
+          </button>
+        </div>
+      </div>
+
+      <!-- Incident Table -->
+      <div class="overflow-x-auto rounded-xl border border-slate-800">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-900/80 text-slate-400 font-mono uppercase text-[11px] border-b border-slate-800">
+            <tr>
+              <th class="p-3">Timestamp</th>
+              <th class="p-3">Condition / Fault State</th>
+              <th class="p-3">Severity</th>
+              <th class="p-3">Confidence</th>
+              <th class="p-3">Leakage (mA)</th>
+              <th class="p-3">PD Count</th>
+              <th class="p-3">Action</th>
+            </tr>
+          </thead>
+          <tbody id="incidentLogBody" class="divide-y divide-slate-800/60 font-mono text-slate-300">
+            <!-- Populated via JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="text-center text-xs text-slate-500 py-2 flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-slate-800/80">
+      <p>AURA-GRID AI Fault Detection System &bull; Deployed for High-Voltage Transmission Line Monitoring</p>
+      <p class="font-mono">Trained on 1,750 Research Samples &bull; Vercel Ready</p>
+    </footer>
+
+  </div>
+
+  <!-- MODEL DETAILS MODAL -->
+  <div id="modelModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-panel bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2">
+          <i data-lucide="info" class="w-5 h-5 text-cyan-400"></i>
+          <h3 class="text-base font-bold text-white">Model Specs & Research Dataset Verification</h3>
+        </div>
+        <button id="closeModelModalBtn" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs text-slate-300">
+        <p><strong class="text-white">Dataset Grounding:</strong> Extracted directly from the attached high-voltage insulator research paper dataset (1,750 verified samples across 175 insulators).</p>
+        
+        <div class="grid grid-cols-2 gap-2 font-mono text-[11px] bg-slate-950 p-3 rounded-xl border border-slate-800">
+          <div>&bull; Total Samples: <strong>1,750</strong></div>
+          <div>&bull; Grouped Insulators: <strong>175 (10 samples/each)</strong></div>
+          <div>&bull; Test Accuracy: <strong class="text-emerald-400">95.56%</strong></div>
+          <div>&bull; Weighted F1 Score: <strong class="text-emerald-400">95.63%</strong></div>
+          <div>&bull; Quantized INT8 Size: <strong>3,608 bytes</strong></div>
+          <div>&bull; Memory Arena: <strong>4.0 KB RAM</strong></div>
+        </div>
+
+        <h4 class="font-bold text-white text-sm pt-2">Confusion Matrix (Real Test Set):</h4>
+        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-[11px]">
+          <div>Healthy (Class 0):&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 39 correct / 40 total (97.5% Recall)</div>
+          <div>Light Fault (Class 1):&nbsp;&nbsp;&nbsp;&nbsp; 46 correct / 50 total (92.0% Recall)</div>
+          <div>Moderate Fault (Class 2): 28 correct / 30 total (93.3% Recall)</div>
+          <div>Heavy Fault (Class 3):&nbsp;&nbsp;&nbsp; 145 correct / 150 total (96.7% Recall)</div>
+        </div>
+
+        <h4 class="font-bold text-white text-sm pt-2">Vercel Deployment Architecture:</h4>
+        <p>This web application embeds the trained mathematical neural network weights directly in JavaScript. It executes client-side in sub-millisecond time with zero dependency on Python servers or heavy cloud APIs, guaranteeing instant Vercel edge deployment.</p>
+      </div>
+
+      <div class="pt-3 border-t border-slate-800 text-right">
+        <button onclick="document.getElementById('modelModal').classList.add('hidden')" class="px-4 py-2 rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load Model Weights and Application Script -->
+  <script src="model_data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

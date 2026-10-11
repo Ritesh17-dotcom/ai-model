@@ -1,0 +1,20 @@
+{
+  "name": "auragrid-tinyml-fault-alert",
+  "version": "1.0.0",
+  "description": "Real-Time TinyML High-Voltage Insulator Fault Detection & Alert SCADA System",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve ."
+  },
+  "keywords": [
+    "tinyml",
+    "esp32",
+    "fault-detection",
+    "high-voltage",
+    "alert-system",
+    "iot",
+    "scada"
+  ],
+  "author": "AURA-GRID Team",
+  "license": "MIT"
+}
